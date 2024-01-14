@@ -261,12 +261,21 @@ def get_module_flops(module, is_sparse=False):
     Returns:
         int: The sum of the entire model flops
     """
-    sum_flops = module.__flops__ * sum(
-        p.count_nonzero().item() for p in module.parameters() if p.requires_grad
-    ) / sum(p.numel() for p in module.parameters() if p.requires_grad) if is_sparse else module.__flops__
-    # iterate over immediate children modules
+    # Sum of non-zero elements in parameters
+    sum_nonzero = sum(p.count_nonzero().item() for p in module.parameters() if p.requires_grad)
+    # Sum of total elements in parameters
+    sum_total = sum(p.numel() for p in module.parameters() if p.requires_grad)
+
+    # Check if the sum of total elements is zero to avoid division by zero
+    if sum_total == 0:
+        sum_flops = 0
+    else:
+        sum_flops = module.__flops__ * sum_nonzero / sum_total if is_sparse else module.__flops__
+
+    # Iterate over immediate children modules
     for child in module.children():
         sum_flops += get_module_flops(child, is_sparse=is_sparse)
+
     return sum_flops
 
 
@@ -280,12 +289,21 @@ def get_module_macs(module, is_sparse=False):
     Returns:
         int: The sum of the entire model macs
     """
-    sum_macs = module.__macs__ * sum(
-        p.count_nonzero().item() for p in module.parameters() if p.requires_grad
-    ) / sum(p.numel() for p in module.parameters() if p.requires_grad) if is_sparse else module.__macs__
-    # iterate over immediate children modules
+    # Sum of non-zero elements in parameters
+    sum_nonzero = sum(p.count_nonzero().item() for p in module.parameters() if p.requires_grad)
+    # Sum of total elements in parameters
+    sum_total = sum(p.numel() for p in module.parameters() if p.requires_grad)
+
+    # Check if the sum of total elements is zero to avoid division by zero
+    if sum_total == 0:
+        sum_macs = 0
+    else:
+        sum_macs = module.__macs__ * sum_nonzero / sum_total if is_sparse else module.__macs__
+
+    # Iterate over immediate children modules
     for child in module.children():
         sum_macs += get_module_macs(child, is_sparse=is_sparse)
+
     return sum_macs
 
 
